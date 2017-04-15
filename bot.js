@@ -1,5 +1,6 @@
 const rita = require('rita').RiTa;
 const Twit = require('twit');
+const T = new Twit(require('./t'));
 const fs = require('fs');
 require.extensions['.txt'] = function (module, filename) {
     module.exports = fs.readFileSync(filename, 'utf8');
@@ -19,7 +20,7 @@ const pickAdjective = function(firstLetter, length = 6){
     return word;
 }
 
-const findLines = function(adjective){
+const findLines = function(adjective, secondCharIndex){
     let lines = [];
     for (var i = 0; i < adjective.length; i++) lines.push(pickAdjective(adjective[i]));
     return lines;
@@ -31,7 +32,28 @@ const buildAcrostic = function(){
     for (var i = 0; i < adjective.length; i++){
         acrostic.push(adjective[i] + (i != dontReplaceFirstCharIndex ? lines[i].slice(1) : lines[i]));
     }
-    console.log(['why yes im ' + adjective.join(''), acrostic.join('\n')].join('\n'))
-    return acrostic.join('\n')
+    return ['why yes im ' + adjective.join(''), acrostic.join('\n')].join('\n');
 }
-buildAcrostic();
+
+const tweetText = function(status){
+    T.post('statuses/update', { status }, function(err, data, response) {
+        console.log(data)
+    })
+}
+
+const bot = function(){
+    let status = buildAcrostic();
+    while (status.length == 0 || status.length > 143) status = buildAcrostic();
+    console.log(status)
+    tweetText(status);
+}
+// bot();
+
+setInterval(function() {
+  try {
+    bot();
+  }
+  catch (e) {
+    console.log(e);
+  }
+}, 60000 * 60 * 9 * 1.1);
